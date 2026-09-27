@@ -1,4 +1,4 @@
-"""Parity with the upstream projects: any call valid for AURA's MCP, droidrun's official
+"""Parity with the upstream projects: any call valid for droidrun's official
 mobilerun-mcp, the mobilerun-core Device API or the mobilerun agent must be valid here.
 
 Specs live in src/mobilerun_mcp/upstream/ (extracted from the upstream sources).
@@ -73,26 +73,6 @@ def check_compatible(tool: str, upstream: dict, ours: dict) -> list[str]:
         if req not in upstream.get("required", []):
             problems.append(f"{tool}: requires {req!r}, which the upstream call may omit")
     return problems
-
-
-def test_every_aura_tool_accepts_aura_calls(surface):
-    tools, _, _ = surface
-    aura = spec("aura_tools.json")["tools"]
-    problems = []
-    for name, upstream in aura.items():
-        if name not in tools:
-            problems.append(f"missing AURA tool {name}")
-            continue
-        problems += check_compatible(name, upstream, tools[name])
-    assert not problems, "\n".join(problems)
-
-
-def test_aura_adb_alias_and_resources_and_prompts(surface):
-    tools, uris, prompts = surface
-    meta = spec("aura_tools.json")
-    assert "aura-adb" in tools
-    assert set(meta["resources"]) <= uris, set(meta["resources"]) - uris
-    assert set(meta["prompts"]) <= prompts, set(meta["prompts"]) - prompts
 
 
 def test_every_official_mobilerun_mcp_tool_accepts_its_calls(surface):

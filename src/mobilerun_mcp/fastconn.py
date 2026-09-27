@@ -5,8 +5,7 @@ scroll_until, wait_for_* ...) on top of a small ``Connection`` protocol. This su
 core's own adb connection for everything it does not override, and swaps the hot paths
 (UI tree, taps, swipes, screenshots, keys, plain typing) for the Portal HTTP API through an adb
 forward, which is ~50x faster than core's per-call adb round trips. It also fills in operations
-core-local does not offer on local devices: clipboard, runtime permissions, deep links and
-JavaScript in the foreground browser page.
+core-local does not offer on local devices: clipboard, runtime permissions, and deep links.
 
 Every method runs in a worker thread (see :mod:`coredev`) and bridges back to the server's
 event loop for the async session calls.
@@ -18,7 +17,7 @@ import asyncio
 import base64
 from typing import TYPE_CHECKING, Any
 
-from mobilerun_core.connection import KEY_CODES
+from mobilerun_core.connection import KEY_CODES, UnsupportedOperation
 from mobilerun_core.connection.framework import MobilerunLocalAndroidAdb, _normalize_tree
 
 from .shell import q
@@ -110,19 +109,11 @@ class FastAndroidConnection(MobilerunLocalAndroidAdb):
             raise ValueError(out.strip().splitlines()[-1][:300])
 
     def execute_script(self, js: str) -> Any:
-        return self._await(evaluate_in_browser(self._session, js))
-
-
-async def evaluate_in_browser(session: DeviceSession, js: str) -> Any:
-    """Evaluate ``js`` in the on-device browser page (the ``scratch`` browser session)."""
-    from .browser.cdp import CdpError
-    from .tools.browser import manager
-
-    try:
-        attached = await manager(session).attach("scratch")
-        return await attached.client.evaluate(js)
-    except CdpError as exc:
-        raise ValueError(f"execute_script: {exc}") from exc
+        raise UnsupportedOperation(
+            verb="execute_script",
+            backend="android-adb",
+            reason="Browser automation has been removed",
+        )
 
 
 def allow_all(action: str, args: dict[str, Any]) -> None:

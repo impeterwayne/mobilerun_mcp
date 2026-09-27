@@ -17,7 +17,6 @@ requires-python = ">=3.11,<3.14"
 dependencies = [
   "fastmcp>=3.0",
   "httpx>=0.27",
-  "websockets>=13",
   "pillow>=10",
   "mobilerun-core[local]>=1.6,<2",
   "onnxruntime>=1.18",
@@ -56,6 +55,3 @@ target-version = "py311"
 select = ["E", "F", "I", "UP", "B"]
 # ruff format wraps code; docstrings and messages may run a little long
 ignore = ["E501"]
-
-[tool.ruff.lint.per-file-ignores]
-"src/mobilerun_mcp/browser/js.py" = ["UP031"]  # JavaScript snippets use %-templates

@@ -1,24 +1,15 @@
-"""Live checks for the upstream-parity surface: AURA formats, mobilerun-core Device API,
-mobilerun agent actions, launcher shortcuts, the AURA browser model and local paths of the
+"""Live checks for the upstream-parity surface: mobilerun-core Device API,
+mobilerun agent actions, launcher shortcuts and local paths of the
 official cloud tools."""
 
 import asyncio
-from urllib.parse import quote
 
 import pytest
 
 pytestmark = pytest.mark.live
 
-LIST_PAGE = "data:text/html;charset=utf-8," + quote(
-    "<title>List</title><h1>Shop</h1><ul>"
-    + "".join(
-        f'<li class="item"><a href="#p{i}">Product {i}</a> price {i}0</li>' for i in range(1, 7)
-    )
-    + '</ul><button id="b" onclick="document.title=\'clicked\'">Buy</button>'
-)
 
-
-async def test_read_screen_is_an_aura_grid(phone):
+async def test_read_screen_grid(phone):
     grid = await phone.call("read_screen")
     assert grid.startswith("SCREEN ") and ("IDLE" in grid or "BUSY" in grid)
     assert "som  in   flg" in grid and "+--" in grid.replace("+-", "+--")
@@ -76,7 +67,7 @@ async def test_launcher_shortcut_deeplinks(phone):
     await phone.shell("am force-stop com.android.settings")
 
 
-async def test_aura_argument_forms(phone):
+async def test_device_argument_forms(phone):
     alarms = await phone.call("system_intent", action="show_alarms")
     assert alarms["handled_by"].startswith("com.android.deskclock/")
     await phone.home()
@@ -118,32 +109,6 @@ async def test_official_device_tools_work_on_a_local_device(phone):
     assert tapped
     unsupported = await phone.call_error("manage_esim", deviceId=DEVICE, operation="list")
     assert "unsupported" in unsupported
-
-
-async def test_browser_el_id_generation_items_and_tabs(phone):
-    opened = await phone.call("browser_open", url=LIST_PAGE, background=True)
-    assert opened["title"] == "List" and opened["generation"] >= 1
-    button = next(e for e in opened["elements"] if e["text"] == "Buy")
-    clicked = await phone.call(
-        "browser_act", action="click", el_id=button["el_id"], generation=opened["generation"]
-    )
-    assert clicked["title"] == "clicked"
-    stale = await phone.call(
-        "browser_act", action="click", el_id=button["el_id"], generation=opened["generation"] - 1
-    )
-    assert stale["stale_handles"]
-    items = await phone.call("browser_extract")
-    assert items["total"] == 6 and items["items"][0]["link"].endswith("#p1")
-    found = await phone.call("browser_find", text="Product 3")
-    assert found["found"] and found["el_id"] is not None
-    tab = await phone.call("browser_tabs", action="open", url="data:text/html,<title>Two</title>")
-    assert tab["title"] == "Two"
-    tabs = await phone.call("browser_tabs")
-    assert tabs["count"] == 2
-    back = await phone.call("browser_tabs", action="switch", index=1)
-    assert back["reloaded"] and back["title"] in ("List", "clicked")
-    assert await phone.call("execute_script", js="1 + 2") == 3
-    await phone.call("browser_close")
 
 
 async def test_list_devices_scopes(phone):

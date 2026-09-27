@@ -145,6 +145,5 @@ def register(mcp: FastMCP, rt: Runtime) -> None:
     @mcp.tool(tags={"read"})
     async def get_usage_guide(topic: str | None = None) -> dict:
         """How to use this server well. Topics: overview, shortcuts, text_entry, failures, ledger,
-        browser, safety, stop, efficiency, full (AURA's names decision_tree, perception, loop,
-        loading, trust, deeplinks, action_plane also work)."""
+        safety, stop, efficiency, full."""
         return {"topics": [*guide_mod.TOPICS, "full"], "guide": guide_mod.guide(topic)}

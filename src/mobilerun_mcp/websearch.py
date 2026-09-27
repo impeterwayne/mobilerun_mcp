@@ -103,7 +103,7 @@ TAVILY_URL = "https://api.tavily.com/search"
 async def tavily_search(
     query: str, limit: int, topic: str, api_key: str, client: httpx.AsyncClient | None = None
 ) -> dict[str, Any]:
-    """Tavily (AURA's provider): a synthesized answer plus ranked source snippets."""
+    """Tavily: a synthesized answer plus ranked source snippets."""
     body = {
         "query": query,
         "max_results": limit,

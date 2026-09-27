@@ -117,7 +117,7 @@ def test_wm_size_prefers_override_line():
     assert system.parse_wm_size("garbage") is None
 
 
-def test_contacts_and_resolve_and_sockets(fixture_text):
+def test_contacts_and_resolve(fixture_text):
     (contact,) = system.parse_contacts(fixture_text("contacts_phones.txt"))
     assert contact.name == "Ali Omar" and contact.number.startswith("+20")
     assert system.parse_contacts("No result found.") == []
@@ -127,8 +127,6 @@ def test_contacts_and_resolve_and_sockets(fixture_text):
     chooser = system.parse_resolve_activity(fixture_text("resolve_view_https.txt"))
     assert system.is_chooser(chooser) and not system.is_chooser("com.x/.Main")
     assert system.parse_resolve_activity("No activity found") is None
-    sockets = system.parse_devtools_sockets(fixture_text("devtools_sockets.txt"))
-    assert ("webview_devtools_remote_21512", 21512) in sockets and len(sockets) == 4
 
 
 def test_find_parses_absolute_paths_only():

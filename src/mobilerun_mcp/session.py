@@ -64,7 +64,6 @@ class DeviceSession:
         self._apps: list[App] = []
         self._apps_at = 0.0
         self._connected = False
-        self.browser = None  # BrowserManager, created on first browser tool call
 
     @property
     def has_adb(self) -> bool:
@@ -340,15 +339,10 @@ class Runtime:
 
     async def drop(self, name: str) -> None:
         session = self._sessions.pop(name, None)
-        if session is not None:
-            if session.browser is not None:
-                await session.browser.close()
-            if session.portal is not None:
-                await session.portal.close()
+        if session is not None and session.portal is not None:
+            await session.portal.close()
 
     async def aclose(self) -> None:
         for session in self._sessions.values():
-            if session.browser is not None:
-                await session.browser.close()
             if session.portal is not None:
                 await session.portal.close()

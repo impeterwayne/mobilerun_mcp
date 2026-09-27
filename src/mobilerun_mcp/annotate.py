@@ -8,7 +8,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 from .models import Mark
 
-# AURA's colour legend: BLUE tappable, GREEN text input, MAGENTA scrollable, AMBER toggle,
+# Colour legend: BLUE tappable, GREEN text input, MAGENTA scrollable, AMBER toggle,
 # GREY nothing declared, RED on-host vision (detector/OCR, not the accessibility tree).
 BLUE, GREEN, MAGENTA, AMBER, GREY, RED = (
     (40, 110, 240),

@@ -1,6 +1,6 @@
 """Launcher shortcuts (static, dynamic and pinned) from ``dumpsys shortcut``.
 
-Each shortcut becomes an ``app-shortcut://<package>/<id>`` deep link, the form AURA uses; its
+Each shortcut becomes an ``app-shortcut://<package>/<id>`` deep link; its
 first intent is kept so the shortcut can be started with ``am start``.
 """
 

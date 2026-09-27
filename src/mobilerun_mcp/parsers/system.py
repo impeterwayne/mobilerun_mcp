@@ -95,15 +95,6 @@ def parse_resolve_activity(output: str) -> str | None:
     return None
 
 
-def parse_devtools_sockets(output: str) -> list[tuple[str, int | None]]:
-    """(socket name, pid) for each ``@*devtools_remote*`` abstract socket."""
-    found = []
-    for name in sorted(set(re.findall(r"@([a-z_]*devtools_remote[_0-9a-z]*)", output))):
-        pid = re.search(r"_(\d+)$", name)
-        found.append((name, int(pid.group(1)) if pid else None))
-    return found
-
-
 def parse_find(output: str) -> list[str]:
     return [ln.strip() for ln in output.splitlines() if ln.strip().startswith("/")]
 

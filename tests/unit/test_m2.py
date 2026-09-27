@@ -39,9 +39,7 @@ def test_set_alarm_args_and_validation():
     )
     with pytest.raises(ValueError):
         build_intent("set_alarm", {"hour": 25, "minute": 0})
-    assert (
-        "alarm.MINUTES 0" in build_intent("set_alarm", {"hour": 7}).args
-    )  # AURA: minute defaults to 0
+    assert "alarm.MINUTES 0" in build_intent("set_alarm", {"hour": 7}).args  # minute defaults to 0
     with pytest.raises(ValueError, match="missing"):
         build_intent("set_alarm", {"minute": 5})
 

@@ -232,18 +232,6 @@ def test_server_advertises_full_tool_surface():
         "list_devices",
         "ping_device",
         "run_task",
-        # browser over CDP
-        "browser_open",
-        "browser_close",
-        "browser_tabs",
-        "browser_screenshot",
-        "browser_read",
-        "browser_find",
-        "browser_wait",
-        "browser_extract",
-        "browser_act",
-        "browser_handoff",
-        "browser_upload",
     }
 
     async def names():

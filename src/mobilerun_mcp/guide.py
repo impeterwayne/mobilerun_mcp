@@ -35,14 +35,6 @@ For multi-step goals: set_plan(steps, goal, deliverable, target_count) then mark
 record_finding(item, quote) for each item you read (the quote must appear on the current screen).
 end_session(outcome="success") is refused until findings reach target_count; otherwise finish with
 outcome="partial" and say exactly what was covered. Never claim an unverified success.""",
-    "browser": """\
-browser_open(url) returns the page text, numbered elements (el_id) and a generation. session
-"scratch" (default) is this server's browser, signed into nothing; "mine" drives the user's
-signed-in browser (Chrome). browser_act(action, el_id, value, generation) acts and returns the new
-page; a stale generation returns stale_handles. browser_find(text) locates an element (scrolling
-lazy lists), browser_extract pulls repeated items, browser_tabs keeps several pages, browser_wait
-waits for text. browser_handoff(prompt) lets the person sign in or solve a CAPTCHA; call it again
-with check=true. Never ask for passwords.""",
     "safety": """validate_action(gesture_type, target) pre-checks the policy. With MOBILERUN_MCP_POLICY on, banking,
 payment, authenticator and password-manager apps, card numbers, CVVs (and in strict mode passwords,
 PINs, national ids) are refused with policy_blocked. That is final: never reach it through adb,
@@ -56,20 +48,7 @@ processing); gestures already settle. read_screen is cheaper than perceive_scree
 }
 
 
-# AURA's topic names
-ALIASES = {
-    "decision_tree": "shortcuts",
-    "perception": "overview",
-    "loop": "overview",
-    "loading": "efficiency",
-    "trust": "safety",
-    "deeplinks": "shortcuts",
-    "action_plane": "text_entry",
-}
-
-
 def guide(topic: str | None = None) -> str:
-    topic = ALIASES.get(topic or "", topic)
     if topic == "full":
         topic = None
     if topic and topic in TOPICS:

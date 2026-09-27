@@ -12,7 +12,7 @@ from ..session import DeviceSession, Runtime
 from .common import Device, check_point, enforce, get_session, guard_foreground
 
 DEFAULT_SWIPE_MS = 300
-DEFAULT_LONG_PRESS_MS = 1000  # AURA's default; mobilerun-core callers pass ms=800 explicitly
+DEFAULT_LONG_PRESS_MS = 1000
 SCROLL_MS = 500
 SCROLL_TOP_MARGIN = 120
 SCROLL_BOTTOM_MARGIN = 140
@@ -270,7 +270,7 @@ def register(mcp: FastMCP, rt: Runtime) -> None:
         device: Device = None,
     ) -> dict:
         """Two modes. With x1, y1, x2, y2: drag the content from one point to the other (precise
-        scroll, AURA). With text: scroll in direction until an element containing text is
+        scroll). With text: scroll in direction until an element containing text is
         visible and return its mark."""
         if text is None:
             if None in (x1, y1, x2, y2):

@@ -96,7 +96,7 @@ async def _pump(entry: LocalTask) -> None:
         entry.proc.kill()
         raise
     found = GOAL.findall(entry.text())
-    entry.result = found[-1] if found else ""
+    entry.result = found[-1].strip() if found else ""
     if entry.status != "cancelled":
         entry.status = "completed" if code == 0 else "failed"
     entry.finished = time.time()
@@ -187,10 +187,14 @@ def register(mcp: FastMCP, rt: Runtime) -> None:
             args.append("--vision")
         if reasoning:
             args.append("--reasoning")
+        bin_path = _mobilerun_bin(rt.config.mobilerun_bin)
+        exec_args = [bin_path, *args, task]
+        import os
+
+        if os.name == "nt" and bin_path.lower().endswith((".cmd", ".bat")):
+            exec_args = ["cmd.exe", "/c", *exec_args]
         entry.proc = await asyncio.create_subprocess_exec(
-            _mobilerun_bin(rt.config.mobilerun_bin),
-            *args,
-            task,
+            *exec_args,
             cwd=entry.folder,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,

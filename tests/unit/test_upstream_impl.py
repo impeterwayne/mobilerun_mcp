@@ -84,7 +84,7 @@ def test_find_uncovered_point_none_when_fully_covered():
     assert agentui.find_uncovered_point((0, 0, 10, 10), [(0, 0, 10, 10)]) is None
 
 
-# ---- AURA grid and entries ------------------------------------------------------------------
+# ---- Screen grid and entries ------------------------------------------------------------------
 def test_render_grid_header_table_flags_and_escalate():
     screen = parse_screen(STATE)
     marks = build_marks(screen)
@@ -270,14 +270,20 @@ def test_load_secrets_supports_both_mobilerun_formats(tmp_path):
 
 
 def test_local_run_task_lifecycle(tmp_path):
+    import os
+
     from fastmcp import Client
 
     from mobilerun_mcp.config import Config
     from mobilerun_mcp.server import build_server
 
-    fake = tmp_path / "mobilerun"
-    fake.write_text("#!/bin/sh\necho step one\necho 'Goal achieved: opened it'\n")
-    fake.chmod(0o755)
+    if os.name == "nt":
+        fake = tmp_path / "mobilerun.cmd"
+        fake.write_text("@echo off\r\necho step one\r\necho Goal achieved: opened it\r\n")
+    else:
+        fake = tmp_path / "mobilerun"
+        fake.write_text("#!/bin/sh\necho step one\necho 'Goal achieved: opened it'\n")
+        fake.chmod(0o755)
 
     async def run():
         cfg = Config(device="x:1", mobilerun_bin=str(fake))

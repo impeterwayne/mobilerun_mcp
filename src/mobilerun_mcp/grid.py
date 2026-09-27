@@ -1,4 +1,4 @@
-"""Text views of the screen in AURA's formats.
+"""Text views of the screen.
 
 - :func:`render_grid` - read_screen: the screen drawn as a character grid of boxes (som_id and
   label inside), an IDLE/BUSY header, a table of actionable elements (som, in, flg, label),

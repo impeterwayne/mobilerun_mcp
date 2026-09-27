@@ -1,7 +1,15 @@
 from __future__ import annotations
 
 import json
+import sys
+import unittest.mock
 from pathlib import Path
+
+if "fcntl" not in sys.modules:
+    try:
+        import fcntl  # noqa: F401
+    except ImportError:
+        sys.modules["fcntl"] = unittest.mock.MagicMock()
 
 import pytest
 

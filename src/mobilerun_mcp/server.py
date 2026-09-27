@@ -28,9 +28,6 @@ from .tools import (
     tasks,
     waiting,
 )
-from .tools import (
-    browser as browser_tools,
-)
 from .tools import input as input_tools
 from .tools import intents as intent_tools
 
@@ -93,47 +90,6 @@ def register_resources(mcp: FastMCP, runtime: Runtime) -> None:
             f"{screen.phone.app} ({screen.phone.package}) keyboard={screen.phone.keyboard_visible}\n"
             + format_marks(marks)
         )
-
-    @mcp.resource(
-        "aura://policy/sensitive-actions",
-        name="Sensitive-action policy",
-        mime_type="text/markdown",
-    )
-    def aura_policy() -> str:
-        """What the device blocks and why: read before app launches, deep links or text entry."""
-        return f"# Sensitive-action policy\n\nactive mode: {runtime.config.policy}\n\n{POLICY_TEXT}"
-
-    @mcp.resource(
-        "aura://guide/tool-selection",
-        name="Tool-selection guide",
-        mime_type="text/markdown",
-    )
-    def aura_guide() -> str:
-        """How to drive the device: the perceive-act-verify loop, deep links first, the contract."""
-        return guide_mod.guide()
-
-    @mcp.resource("aura://device/status", name="Live device status", mime_type="application/json")
-    async def aura_status() -> dict:
-        """Screen size, Android API level, device model and accessibility-service state."""
-        session = runtime.session()
-        await session.ensure_connected()
-        width, height = await session.screen_size()
-        status = {"screen_width_px": width, "screen_height_px": height}
-        if session.has_adb:
-            props = await session.shell(
-                "getprop ro.build.version.sdk; getprop ro.product.model; "
-                "settings get secure enabled_accessibility_services",
-                check=False,
-            )
-            sdk, model, services = (props.splitlines() + ["", "", ""])[:3]
-            status.update(
-                android_api_level=int(sdk) if sdk.strip().isdigit() else None,
-                device_model=model.strip(),
-                accessibility_service_running="com.mobilerun.portal" in services,
-            )
-        else:
-            status.update(platform=session.target.platform, kind=session.target.kind)
-        return status
 
     @mcp.prompt(name="automate_task")
     def automate_task(request: str) -> str:
@@ -208,7 +164,6 @@ def build_server(config: Config | None = None) -> FastMCP:
         intent_tools,
         waiting,
         plan,
-        browser_tools,
         core,
         agent,
         tasks,

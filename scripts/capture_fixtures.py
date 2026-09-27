@@ -87,7 +87,6 @@ async def main(serial: str) -> None:
         "-c android.intent.category.LAUNCHER com.android.deskclock",
         "resolve_view_https.txt": "cmd package resolve-activity --brief "
         "-a android.intent.action.VIEW -d https://www.facebook.com/",
-        "devtools_sockets.txt": "cat /proc/net/unix | grep -o '@[a-z_]*devtools_remote[_0-9a-z]*'",
         "find_sdcard.txt": "find /sdcard -maxdepth 2 2>/dev/null | head -40",
         "df_data.txt": "df /data",
         "ip_addr.txt": "ip -4 addr show",
