@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "mobilerun": {
+      "command": "d:/Quest/mobilerun-mcp/.venv/Scripts/python.exe",
+      "args": ["-m", "mobilerun_mcp.server"]
+    },
+    "mobilerun-agent": {
+      "command": "d:/Quest/mobilerun-mcp/.venv/Scripts/python.exe",
+      "args": ["-m", "mobilerun_mcp.agent_server"]
+    },
+    "mobilerun-cloud": {
+      "command": "d:/Quest/mobilerun-mcp/.venv/Scripts/python.exe",
+      "args": ["-m", "mobilerun_mcp.cloud_server"]
+    }
+  }
+}
