@@ -235,7 +235,7 @@ def test_server_advertises_full_tool_surface():
     }
 
     async def names():
-        async with Client(build_server(Config())) as client:
+        async with Client(build_server(Config(), mode="all")) as client:
             return {t.name for t in await client.list_tools()}
 
     missing = expected - asyncio.run(names())

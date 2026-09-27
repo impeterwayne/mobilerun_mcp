@@ -33,6 +33,8 @@ Issues = "https://github.com/Hi-im-Connect/mobilerun-mcp/issues"
 
 [project.scripts]
 mobilerun-mcp = "mobilerun_mcp.server:main"
+mobilerun-agent-mcp = "mobilerun_mcp.agent_server:main"
+mobilerun-cloud-mcp = "mobilerun_mcp.cloud_server:main"
 
 [build-system]
 requires = ["hatchling"]

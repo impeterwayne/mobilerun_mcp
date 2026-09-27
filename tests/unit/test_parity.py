@@ -14,7 +14,13 @@ import pytest
 from fastmcp import Client
 
 from mobilerun_mcp.config import Config
-from mobilerun_mcp.server import build_server
+from mobilerun_mcp.server import (
+    build_agent_server,
+    build_all_server,
+    build_cloud_server,
+    build_core_server,
+    build_server,
+)
 
 TYPES = {
     "number": {"number", "integer"},
@@ -32,7 +38,7 @@ def spec(name: str) -> dict:
 
 async def _surface() -> tuple[dict[str, dict], set[str], set[str]]:
     cfg = Config(enable_adb=True, device="x:1", cloud_api_key="dr_sk_test")
-    async with Client(build_server(cfg)) as client:
+    async with Client(build_all_server(cfg)) as client:
         tools = {
             t.name: (getattr(t, "input_schema", None) or t.inputSchema)
             for t in await client.list_tools()
@@ -112,3 +118,42 @@ def test_every_mobilerun_agent_action_is_a_tool(surface):
         props = tools[action].get("properties", {})
         problems += [f"{action}: missing parameter {p!r}" for p in params if p not in props]
     assert not problems, "\n".join(problems)
+
+
+def test_core_server_isolation():
+    cfg = Config(enable_adb=True)
+
+    async def run():
+        async with Client(build_core_server(cfg)) as client:
+            return {t.name for t in await client.list_tools()}
+
+    tools = asyncio.run(run())
+    assert "ui" in tools and "tap" in tools and "adb" in tools
+    assert "get_state" not in tools and "click" not in tools
+    assert "create_device" not in tools and "manage_device" not in tools
+
+
+def test_agent_server_isolation():
+    cfg = Config()
+
+    async def run():
+        async with Client(build_agent_server(cfg)) as client:
+            return {t.name for t in await client.list_tools()}
+
+    tools = asyncio.run(run())
+    assert "get_state" in tools and "click" in tools and "run_task" in tools
+    assert "ui" not in tools and "tap" not in tools
+    assert "create_device" not in tools
+
+
+def test_cloud_server_isolation():
+    cfg = Config(cloud_api_key="dr_sk_test")
+
+    async def run():
+        async with Client(build_cloud_server(cfg)) as client:
+            return {t.name for t in await client.list_tools()}
+
+    tools = asyncio.run(run())
+    assert "create_device" in tools and "manage_device" in tools
+    assert "ui" not in tools and "tap" not in tools
+    assert "click" not in tools

@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import AsyncIterator
+import os
+from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 
 from fastmcp import FastMCP
@@ -31,8 +32,32 @@ from .tools import (
 from .tools import input as input_tools
 from .tools import intents as intent_tools
 
-INSTRUCTIONS = """\
-You control a phone (Android over adb, iOS, or a Mobilerun Cloud device) through numbered marks
+CORE_MODULES = (
+    perception,
+    input_tools,
+    apps,
+    device,
+    legacy,
+    notifications,
+    media,
+    files,
+    intent_tools,
+    waiting,
+    plan,
+    core,
+)
+
+AGENT_MODULES = (
+    agent,
+    tasks,
+)
+
+CLOUD_MODULES = (
+    cloud,
+)
+
+CORE_INSTRUCTIONS = """\
+You control a phone (Android over adb, iOS, or Portal HTTP) through numbered marks
 and typed actions.
 
 Loop: read_screen or perceive_screen -> act -> read the post_action_observation -> repeat.
@@ -48,6 +73,9 @@ Prefer typed tools over tapping through apps: system_intent (alarm, timer, dial,
 share, navigate), read_notifications / notification_action, media_control, open_deeplink,
 launch_app by name.
 
+Core device API: use mobilerun-core Device tools (ui, find_nodes, tap_text, wait_for_app,
+get_clipboard, execute_script, etc.) for direct, structured device interaction.
+
 Text entry: focus the field first (tap or som_id), type_text, and confirm the value read back.
 Search bars submit with press_enter.
 
@@ -56,6 +84,34 @@ then ask the user. A policy_blocked error is a decision, never an obstacle to ro
 Use set_plan / mark_step / record_finding for multi-step goals and end_session honestly.
 """
 
+AGENT_INSTRUCTIONS = """\
+You operate the mobilerun agent action set on Android devices.
+
+Loop: get_state -> click/type by element index -> verify.
+- get_state inspects the current screen as the mobilerun agent sees it: phone state and numbered UI
+  elements ('index. className: resourceId, text - (x1,y1,x2,y2)').
+- Interact with elements by index using click(index=...), type(index=...), or type_secret(secret_id=..., index=...).
+- Use system_button(button="back" | "home" | "enter") for system navigation.
+- Use run_task, get_task, list_tasks, stop_task to manage background agent tasks.
+- Use macro_list and macro_replay to replay saved macros.
+- Finish tasks with complete(success=..., message=...).
+"""
+
+CLOUD_INSTRUCTIONS = """\
+You manage and control devices, applications, and automation flows on the Mobilerun Cloud platform.
+
+- Manage devices: create_device, get_device, terminate_device, manage_device, device_action.
+- Manage apps and files: manage_device_apps, manage_device_files, configure_device, manage_esim.
+- Manage credentials: list_credentials, list_credential_packages, manage_credentials.
+- Cloud workflows and triggers: list_workflow_resources, get_workflow_resource, create_action,
+  create_trigger, create_flow, manage_flow, workflow_events.
+- Cloud API calls require MOBILERUN_CLOUD_API_KEY.
+"""
+
+ALL_INSTRUCTIONS = CORE_INSTRUCTIONS + "\n\n" + AGENT_INSTRUCTIONS + "\n\n" + CLOUD_INSTRUCTIONS
+
+# Backward compatibility alias
+INSTRUCTIONS = CORE_INSTRUCTIONS
 
 POLICY_TEXT = """\
 Safety policy modes (MOBILERUN_MCP_POLICY): off (default) | standard | strict.
@@ -140,7 +196,15 @@ def register_resources(mcp: FastMCP, runtime: Runtime) -> None:
         )
 
 
-def build_server(config: Config | None = None) -> FastMCP:
+def _apply_scopes(mcp: FastMCP, config: Config) -> None:
+    if "write" not in config.scopes:
+        mcp.disable(tags={"write"})
+    if "read" not in config.scopes:
+        mcp.disable(tags={"read"})
+
+
+def build_core_server(config: Config | None = None) -> FastMCP:
+    """Build the primary mobilerun-mcp server: core device API and device control."""
     config = config or Config.from_env()
     runtime = Runtime(config)
 
@@ -151,48 +215,163 @@ def build_server(config: Config | None = None) -> FastMCP:
         finally:
             await runtime.aclose()
 
-    mcp = FastMCP("mobilerun", instructions=INSTRUCTIONS, lifespan=lifespan)
-    for module in (
-        perception,
-        input_tools,
-        apps,
-        device,
-        legacy,
-        notifications,
-        media,
-        files,
-        intent_tools,
-        waiting,
-        plan,
-        core,
-        agent,
-        tasks,
-        cloud,
-    ):
+    mcp = FastMCP("mobilerun", instructions=CORE_INSTRUCTIONS, lifespan=lifespan)
+    for module in CORE_MODULES:
         module.register(mcp, runtime)
     if config.enable_adb:
         adbtool.register(mcp, runtime)
     register_resources(mcp, runtime)
-    if "write" not in config.scopes:
-        mcp.disable(tags={"write"})
-    if "read" not in config.scopes:
-        mcp.disable(tags={"read"})
+    _apply_scopes(mcp, config)
     return mcp
 
 
-def main(argv: list[str] | None = None) -> None:
-    """stdio by default; ``--http`` serves streamable HTTP at http://127.0.0.1:4816/mcp
-    (MOBILERUN_MCP_HTTP_HOST / MOBILERUN_MCP_HTTP_PORT, or --host / --port)."""
+def build_agent_server(config: Config | None = None) -> FastMCP:
+    """Build the detached mobilerun-agent server: agent action set, CLI agent tasks and macros."""
+    config = config or Config.from_env()
+    runtime = Runtime(config)
+
+    @asynccontextmanager
+    async def lifespan(_: FastMCP) -> AsyncIterator[None]:
+        try:
+            yield
+        finally:
+            await runtime.aclose()
+
+    mcp = FastMCP("mobilerun-agent", instructions=AGENT_INSTRUCTIONS, lifespan=lifespan)
+    for module in AGENT_MODULES:
+        module.register(mcp, runtime)
+
+    @mcp.resource("mobilerun://guide")
+    def guide_resource() -> str:
+        return guide_mod.guide()
+
+    @mcp.resource("mobilerun://policy")
+    def policy_resource() -> str:
+        return f"active mode: {runtime.config.policy}\n\n{POLICY_TEXT}"
+
+    @mcp.resource("mobilerun://ledger")
+    async def ledger_resource() -> dict:
+        return runtime.session().ledger.to_dict()
+
+    _apply_scopes(mcp, config)
+    return mcp
+
+
+def build_cloud_server(config: Config | None = None) -> FastMCP:
+    """Build the detached mobilerun-cloud server: Mobilerun Cloud platform tools."""
+    config = config or Config.from_env()
+    runtime = Runtime(config)
+
+    @asynccontextmanager
+    async def lifespan(_: FastMCP) -> AsyncIterator[None]:
+        try:
+            yield
+        finally:
+            await runtime.aclose()
+
+    mcp = FastMCP("mobilerun-cloud", instructions=CLOUD_INSTRUCTIONS, lifespan=lifespan)
+    for module in CLOUD_MODULES:
+        module.register(mcp, runtime)
+
+    @mcp.resource("mobilerun://guide")
+    def guide_resource() -> str:
+        return guide_mod.guide()
+
+    @mcp.resource("mobilerun://policy")
+    def policy_resource() -> str:
+        return f"active mode: {runtime.config.policy}\n\n{POLICY_TEXT}"
+
+    _apply_scopes(mcp, config)
+    return mcp
+
+
+def build_all_server(config: Config | None = None) -> FastMCP:
+    """Build a combined server registering core, agent, and cloud tools."""
+    config = config or Config.from_env()
+    runtime = Runtime(config)
+
+    @asynccontextmanager
+    async def lifespan(_: FastMCP) -> AsyncIterator[None]:
+        try:
+            yield
+        finally:
+            await runtime.aclose()
+
+    mcp = FastMCP("mobilerun", instructions=ALL_INSTRUCTIONS, lifespan=lifespan)
+    for module in (*CORE_MODULES, *AGENT_MODULES, *CLOUD_MODULES):
+        module.register(mcp, runtime)
+    if config.enable_adb:
+        adbtool.register(mcp, runtime)
+    register_resources(mcp, runtime)
+    _apply_scopes(mcp, config)
+    return mcp
+
+
+def build_server(config: Config | None = None, mode: str | None = None) -> FastMCP:
+    """Factory creating the server. Defaults to mode='core'."""
+    selected_mode = (mode or os.environ.get("MOBILERUN_MCP_SERVER_MODE", "core")).strip().lower()
+    if selected_mode == "core":
+        return build_core_server(config)
+    elif selected_mode == "agent":
+        return build_agent_server(config)
+    elif selected_mode == "cloud":
+        return build_cloud_server(config)
+    elif selected_mode == "all":
+        return build_all_server(config)
+    else:
+        raise ValueError(
+            f"Unknown server mode: {selected_mode!r}. Must be 'core', 'agent', 'cloud', or 'all'."
+        )
+
+
+def run_server_cli(
+    prog: str,
+    server_factory: Callable[[Config], FastMCP],
+    argv: list[str] | None = None,
+    default_port: int | None = None,
+) -> None:
     import argparse
 
-    parser = argparse.ArgumentParser(prog="mobilerun-mcp")
+    parser = argparse.ArgumentParser(prog=prog)
     parser.add_argument("--http", action="store_true", help="serve over HTTP instead of stdio")
     parser.add_argument("--host")
     parser.add_argument("--port", type=int)
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.WARNING)
     config = Config.from_env()
-    server = build_server(config)
+    server = server_factory(config)
+    if args.http:
+        port = args.port or default_port or config.http_port
+        server.run(
+            transport="http",
+            host=args.host or config.http_host,
+            port=port,
+            path="/mcp",
+        )
+    else:
+        server.run()
+
+
+def main(argv: list[str] | None = None) -> None:
+    """stdio by default; ``--http`` serves streamable HTTP at http://127.0.0.1:4816/mcp
+    (MOBILERUN_MCP_HTTP_HOST / MOBILERUN_MCP_HTTP_PORT, or --host / --port).
+    --mode core|agent|cloud|all (default: core)."""
+    import argparse
+
+    parser = argparse.ArgumentParser(prog="mobilerun-mcp")
+    parser.add_argument("--http", action="store_true", help="serve over HTTP instead of stdio")
+    parser.add_argument("--host")
+    parser.add_argument("--port", type=int)
+    parser.add_argument(
+        "--mode",
+        choices=["core", "agent", "cloud", "all"],
+        default=os.environ.get("MOBILERUN_MCP_SERVER_MODE", "core"),
+        help="server mode: core (default), agent, cloud, or all",
+    )
+    args = parser.parse_args(argv)
+    logging.basicConfig(level=logging.WARNING)
+    config = Config.from_env()
+    server = build_server(config, mode=args.mode)
     if args.http:
         server.run(
             transport="http",

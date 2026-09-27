@@ -275,7 +275,7 @@ def test_local_run_task_lifecycle(tmp_path):
     from fastmcp import Client
 
     from mobilerun_mcp.config import Config
-    from mobilerun_mcp.server import build_server
+    from mobilerun_mcp.server import build_agent_server
 
     if os.name == "nt":
         fake = tmp_path / "mobilerun.cmd"
@@ -287,7 +287,7 @@ def test_local_run_task_lifecycle(tmp_path):
 
     async def run():
         cfg = Config(device="x:1", mobilerun_bin=str(fake))
-        async with Client(build_server(cfg)) as client:
+        async with Client(build_agent_server(cfg)) as client:
             done = (await client.call_tool("run_task", {"task": "open it"})).structured_content
             task_id = done["taskId"]
             summary = (await client.call_tool("get_task", {"taskId": task_id})).structured_content
