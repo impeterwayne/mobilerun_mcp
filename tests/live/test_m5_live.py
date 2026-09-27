@@ -1,6 +1,5 @@
-"""Live checks for the upstream-parity surface: mobilerun-core Device API,
-mobilerun agent actions, launcher shortcuts and local paths of the
-official cloud tools."""
+"""Live checks for the upstream-parity surface: mobilerun-core Device API
+and launcher shortcuts."""
 
 import asyncio
 
@@ -37,15 +36,6 @@ async def test_core_device_api_on_the_fast_path(phone):
     assert tapped["ok"]
     assert await phone.call("wait_for_app", app_id="com.android.contacts", timeout=20)
     assert "T" in await phone.call("time") or await phone.call("time")
-
-
-async def test_agent_indices_click_like_mobilerun(phone):
-    state = (await phone.call("get_state"))["state"]
-    assert "Current Clickable UI elements" in state
-    line = next(ln for ln in state.splitlines() if '"Contacts"' in ln)
-    result = await phone.call("click", index=int(line.split(".")[0]))
-    assert result["post_action_observation"]["package"] == "com.android.contacts"
-    assert (await phone.call("system_button", button="back"))["ok"]
 
 
 async def test_launch_app_reports_already_foreground(phone):
@@ -96,19 +86,6 @@ async def test_end_session_enforces_a_look_for_messages(phone):
     assert done["outcome"] == "success"
     failed = await phone.call("end_session", reason="gave up", outcome="failure")
     assert failed["outcome"] == "failure"
-
-
-async def test_official_device_tools_work_on_a_local_device(phone):
-    from .conftest import DEVICE
-
-    device = await phone.call("get_device", deviceId=DEVICE)
-    assert device["id"] == DEVICE
-    listed = await phone.call("manage_device_apps", deviceId=DEVICE, operation="list_packages")
-    assert "com.mobilerun.portal" in str(listed)
-    tapped = await phone.call("device_action", deviceId=DEVICE, operation="tap", x=10, y=600)
-    assert tapped
-    unsupported = await phone.call_error("manage_esim", deviceId=DEVICE, operation="list")
-    assert "unsupported" in unsupported
 
 
 async def test_list_devices_scopes(phone):

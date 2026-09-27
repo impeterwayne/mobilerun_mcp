@@ -11,7 +11,6 @@ from ..errors import fail
 from ..parsers import system as sysparse
 from ..parsers.media import parse_stream_block
 from ..session import Runtime
-from . import cloud
 from .common import Device, get_session
 from .legacy import _mobilerun_bin as legacy_bin
 
@@ -69,49 +68,17 @@ def register(mcp: FastMCP, rt: Runtime) -> None:
         }
 
     @mcp.tool(tags={"read"})
-    async def list_devices(
-        scope: str = "local",
-        state: list[str] | None = None,
-        type: str | None = None,
-        name: str | None = None,
-        country: str | None = None,
-        page: int | None = None,
-        pageSize: int | None = None,
-        filters: dict | None = None,
-    ) -> dict:
-        """Devices you can control. scope: local (adb devices) | cloud (Mobilerun Cloud, needs
-        MOBILERUN_CLOUD_API_KEY) | all. Cloud filters: state (creating, assigned, ready,
-        terminated, ...), type, name, country, page, pageSize (or a filters dict).
-        Any listed id works as the device argument of every tool."""
-        if scope not in ("local", "cloud", "all"):
-            fail("invalid_argument", "scope must be local, cloud or all")
-        cloud_args = {
-            "state": state,
-            "type": type,
-            "name": name,
-            "country": country,
-            "page": page,
-            "pageSize": pageSize,
-            **(filters or {}),
-        }
-        if any(v is not None for v in cloud_args.values()) and scope == "local":
-            scope = "cloud"
+    async def list_devices(scope: str = "local") -> dict:
+        """Devices you can control (adb devices). Any listed serial works as the
+        device argument of every tool."""
+        if scope != "local":
+            fail("invalid_argument", "scope must be local")
         result: dict = {"default": rt.config.device or None}
-        if scope in ("local", "all"):
-            try:
-                devices = await adb_mod.list_devices(rt.config.adb_bin)
-            except adb_mod.AdbError as exc:
-                if scope == "local":
-                    fail("device_unreachable", str(exc))
-                devices = []
-            result.update(count=len(devices), devices=devices)
-        if scope in ("cloud", "all"):
-            if scope == "all" and not rt.config.cloud_api_key:
-                result["cloud"] = {"skipped": "MOBILERUN_CLOUD_API_KEY is not set"}
-            else:
-                result["cloud"] = await cloud.cloud_list_devices(
-                    rt, **{k: v for k, v in cloud_args.items() if v is not None}
-                )
+        try:
+            devices = await adb_mod.list_devices(rt.config.adb_bin)
+        except adb_mod.AdbError as exc:
+            fail("device_unreachable", str(exc))
+        result.update(count=len(devices), devices=devices)
         return result
 
     @mcp.tool(tags={"read"})

@@ -1,10 +1,10 @@
 # Mobilerun MCP Tools Reference Catalog
 
-This document provides a comprehensive reference of all **94 Core tools**, **17 Agent tools**, and **27 Cloud tools** available across the Mobilerun MCP suite.
+This document provides a comprehensive reference of all **94 Core tools** available in the Mobilerun MCP server.
 
 ---
 
-## 1. Core Device Tools (`mobilerun` - 94 Tools)
+## 1. Device Tools (`mobilerun` - 94 Tools)
 
 ### 1.1 Perception & Screen Inspection (6 tools)
 | Tool | Description | Primary Arguments |
@@ -145,44 +145,3 @@ Direct bindings to the `mobilerun-core` Python SDK `Device` instance:
 | :--- | :--- | :--- |
 | `press` | Legacy button press for `"home"`, `"back"`, or `"enter"`. Kept for backward compatibility. | `button`, `device` |
 
----
-
-## 2. Agent Tools (`mobilerun-agent` - 17 Tools)
-
-Operates the mobilerun agent action set, background agent runners, and macro playback:
-
-| Tool | Category | Description |
-| :--- | :--- | :--- |
-| `get_state` | Perception | Inspects current screen state with numbered element indices and classes. |
-| `click` | Action | Clicks an element by `index` from `get_state`. |
-| `click_at` | Action | Clicks specific `(x, y)` coordinates. |
-| `click_area` | Action | Clicks the center of a bounding box `(x1, y1, x2, y2)`. |
-| `type_secret` | Security | Types sensitive credentials from secure storage into an element. |
-| `system_button` | Navigation | Sends system buttons (`"back"`, `"home"`, `"enter"`). |
-| `wait` | Timing | Waits for a specified duration in seconds. |
-| `open_app` | Lifecycle | Opens an app by name or package identifier. |
-| `complete` | Lifecycle | Signals task completion with success status and message. |
-| `run_task` | Task Engine | Dispatches a local autonomous task execution in the background. |
-| `get_task` | Task Engine | Checks the status and steps of a running background agent task. |
-| `list_tasks` | Task Engine | Lists active and completed agent background tasks. |
-| `stop_task` | Task Engine | Cancels an active background agent task. |
-| `get_task_media` | Task Engine | Retrieves media artifacts (screenshots, traces) from a task run. |
-| `send_task_message` | Task Engine | Sends user guidance or inputs into a running agent task. |
-| `macro_list` | Automation | Lists pre-recorded macro action flows. |
-| `macro_replay` | Automation | Replays a pre-recorded sequence of actions deterministically. |
-
----
-
-## 3. Cloud Tools (`mobilerun-cloud` - 27 Tools)
-
-Manages remote cloud virtual devices, workflows, webhooks, and credentials:
-
-| Category | Tools | Description |
-| :--- | :--- | :--- |
-| **Virtual Device Lifecycle** | `create_device`, `terminate_device`, `get_device`, `manage_device`, `device_action` | Spin up, stop, restart, snapshot, and manage remote cloud Android instances. |
-| **Remote Inspection** | `get_device_screenshot`, `get_device_ui_state`, `list_apps_on_device` | Capture screenshots, inspect UI trees, and query packages on cloud devices. |
-| **App & File Management** | `manage_device_apps`, `manage_device_files`, `configure_device`, `manage_esim` | Install APKs, push/pull files, change device settings, and configure virtual eSIMs. |
-| **Credentials & Auth** | `list_credentials`, `list_credential_packages`, `manage_credentials` | Secure credential vault management for automated authentication flows. |
-| **Connectivity & Proxies** | `connect`, `proxies`, `webhooks` | Set up proxy routing, manage reverse proxies, and handle webhook endpoints. |
-| **Cloud Workflows** | `create_action`, `create_trigger`, `create_flow`, `manage_flow`, `workflow_events`, `list_workflow_resources`, `get_workflow_resource` | Define event-driven automation pipelines and trigger flows on cloud instances. |
-| **Catalog** | `apps`, `platform_catalog` | Discover supported platform catalog apps and configurations. |

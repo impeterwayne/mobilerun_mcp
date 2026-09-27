@@ -1,28 +1,16 @@
 # mobilerun-mcp
 
 **An MCP server that controls phones: Android (physical, emulator, redroid; ARM or x86_64) over
-adb, iOS through ios-portal, and Mobilerun Cloud devices.** Everything runs on the host, so nothing
-ARM-only has to run on the device.
+adb and iOS through ios-portal.** Everything runs on the host, so nothing ARM-only has to run on the device.
 
-94 core tools covering droidrun's [mobilerun-core](https://pypi.org/project/mobilerun-core/) Device API,
-screen perception, gestures, apps, intents, and device control. Mobilerun agent actions and
-Mobilerun Cloud platform tools are detached into dedicated servers.
-
-### Architecture & Servers
-
-- **`mobilerun-mcp` (Core Server, default)**: 94 tools focusing on `mobilerun-core` Device API,
-  screen perception (`read_screen`, `perceive_screen`), input gestures, system intents, and app control.
-- **`mobilerun-agent-mcp` (Agent Server)**: Detached server for `mobilerun` agent actions
-  (`get_state`, `click`, `type_secret`), background agent tasks, and macro replay.
-- **`mobilerun-cloud-mcp` (Cloud Server)**: Detached server for Mobilerun Cloud platform management
-  (cloud devices, credentials, workflows).
+94 tools covering droidrun's [mobilerun-core](https://pypi.org/project/mobilerun-core/) Device API,
+screen perception, gestures, apps, intents, and device control.
 
 ```
   MCP client (Claude Code, Cursor, ...)
         |  stdio, or HTTP (--http)
   mobilerun-mcp ---- adb ------------------> Android device (Mobilerun Portal)
-     |   '---------- mobilerun-core --------> iOS (ios-portal), Portal-HTTP-only Android,
-     |                                        Mobilerun Cloud
+     |   '---------- mobilerun-core --------> iOS (ios-portal), Portal-HTTP-only Android
      '-- host-side OCR (tesseract) and icon detector (OmniParser v2, onnxruntime)
 ```
 
@@ -340,14 +328,14 @@ screenshot_path {}
 
 ### Gestures, typing and keys
 
-Every action settles the screen and returns `post_action_observation`. Target with `x`/`y`, a `som_id`, or (mobilerun style) an `index` from `get_state`.
+Every action settles the screen and returns `post_action_observation`. Target with `x`/`y` or a `som_id`.
 
 | Tool | What it does | Arguments |
 |---|---|---|
 | `tap` | Tap at (x, y) or at the center of a numbered mark (som_id from perceive_screen / read_screen). | [x] [y] [som_id] [stealth=false] |
 | `double_tap` | Double-tap at (x, y) or a mark. | [x] [y] [som_id] |
-| `long_press` | Press and hold at (x, y), a mark (som_id) or a get_state element (index). | [x] [y] [som_id] [index] [duration_ms] [ms] |
-| `long_press_at` | Long press at (x, y) (mobilerun agent action). | x y |
+| `long_press` | Press and hold at (x, y) or a mark (som_id). | [x] [y] [som_id] [duration_ms] [ms] |
+| `long_press_at` | Long press at (x, y). | x y |
 | `swipe` | Swipe from (x1, y1) to (x2, y2) over duration_ms / ms (default 300). | [x1] [y1] [x2] [y2] [duration_ms] [ms] [coordinate] [coordinate2] [duration] |
 | `scroll_down` | Scroll the content down (reveal what is below): a centered swipe over half the screen (amount), or inside a scrollable mark (som_id). | [amount=0.5] [som_id] |
 | `scroll_up` | Scroll the content up (reveal what is above). | [amount=0.5] [som_id] |
@@ -368,7 +356,7 @@ tap {"som_id": 4}
 tap {"x": 540, "y": 1200}
 double_tap {}
 long_press {"som_id": 4}
-long_press {"index": 7, "ms": 800}
+long_press {"duration_ms": 800}
 long_press_at {"x": 1, "y": 1}
 swipe {"x1": 360, "y1": 1000, "x2": 360, "y2": 300}
 swipe {"coordinate": [360, 1000], "coordinate2": [360, 300], "duration": 0.5}
@@ -507,7 +495,7 @@ get_usage_guide {}
 
 ### mobilerun-core Device API
 
-Same names and parameters as `mobilerun_core.Device`. Works on Android (adb or Portal HTTP), iOS and Mobilerun Cloud devices.
+Same names and parameters as `mobilerun_core.Device`. Works on Android (adb or Portal HTTP) and iOS devices.
 
 | Tool | What it does | Arguments |
 |---|---|---|
@@ -582,7 +570,7 @@ set_clipboard {"value": "copied text"}
 | Tool | What it does | Arguments |
 |---|---|---|
 | `get_device_status` | Battery, screen power, foreground app, size, storage, network addresses, volume. | none |
-| `list_devices` | Devices you can control. | [scope=local] [state] [type] [name] [country] [page] [pageSize] [filters] |
+| `list_devices` | Devices you can control (adb devices). | [scope=local] |
 | `ping_device` | Is the device reachable? | none |
 | `connect_device` | (Re)connect adb and the Portal for a device; use after the network path came back. | none |
 | `disconnect_device` | Disconnect a TCP/IP adb device (adb disconnect host:port) and drop its session. | none |
@@ -635,8 +623,6 @@ adb {"command": "shell dumpsys battery"}
 | `MOBILERUN_MCP_ENABLE_ADB` | `0` | Set to `1` to expose the raw `adb` tool |
 | `BRAVE_API_KEY` | unset | `web_search` uses Brave when set, DuckDuckGo otherwise |
 | `TAVILY_API_KEY` | unset | `web_search` uses Tavily (synthesized answer) when set |
-| `MOBILERUN_CLOUD_API_KEY` | unset | Mobilerun Cloud devices, tasks and the cloud platform tools |
-| `MOBILERUN_CREDENTIALS` | `config/credentials.yaml` | Secrets file for `type_secret` (mobilerun format) |
 | `MOBILERUN_DETECTOR_MODEL` | downloaded | Path to an OmniParser icon-detect `.onnx` |
 | `MOBILERUN_IOS_PORTAL_URL`, `MOBILERUN_IOS_PORTAL_TOKEN` | `http://127.0.0.1:6643` | iOS portal for `device="ios"` |
 | `MOBILERUN_ANDROID_PORTAL_TOKEN` | unset | Bearer token for Portal-HTTP-only Android targets |
@@ -651,21 +637,18 @@ The policy is **off by default**, so an agent can sign in to accounts and use an
   Luhn-valid card numbers, and fields asking for a card security code.
 - `strict` additionally refuses password and PIN fields and national-id numbers.
 
-Blocked actions fail with `[policy_blocked]`. `run_task` and the raw `adb` tool are disabled while
-a policy is on, because they cannot be policed. Read `mobilerun://policy` for the active rules.
+Blocked actions fail with `[policy_blocked]`. The raw `adb` tool is disabled while
+a policy is on, because it cannot be policed. Read `mobilerun://policy` for the active rules.
 
 ## Limitations
 
-- **Tested live on redroid 12 (Android 12, x86_64).** Physical phones, other Android versions, iOS
-  and cloud devices go through the same code paths but were not driven live here; the cloud tools
-  are verified against mocked API responses.
+- **Tested live on redroid 12 (Android 12, x86_64).** Physical phones, other Android versions, and iOS
+  go through the same code paths.
 - **Icon detection** (`detail="full"`) is a host-side guess: red boxes, not facts.
 - **`media_control` with `package_name`** goes to the active media session (adb cannot address one
   app's session); the reply says when that is a different app.
 - **Notification actions and dismissal** drive the notification shade, because `adb` cannot fire a
   PendingIntent. Ongoing notifications cannot be dismissed.
-- **Local `run_task`** runs the mobilerun CLI agent; `outputSchema`, `apps`, `credentials`, `files`
-  and `stealth` apply to cloud tasks only. The agent's self-report can be wrong: verify on screen.
 - **Launcher shortcuts** come from `dumpsys shortcut`; Android elides the path of https shortcut
   URIs there, so those open the app without the exact page.
 - Volume commands succeed on redroid but have no audible effect.
@@ -702,10 +685,6 @@ Independent; not affiliated with Mobilerun/droidrun or redroid.
 
 - [mobilerun-core](https://pypi.org/project/mobilerun-core/) (Apache-2.0) is a dependency; its
   `Device` runs on this server's fast Android transport.
-- [mobilerun](https://github.com/droidrun/mobilerun) (MIT): the agent's element indexing is adapted
-  in `src/mobilerun_mcp/agentui.py`.
-- [droidrun/mobilerun-mcp](https://github.com/droidrun/mobilerun-mcp) (Apache-2.0): the cloud tools
-  in `src/mobilerun_mcp/tools/cloud.py` are a port of its tool layer.
 - [Mobilerun Portal](https://github.com/droidrun/mobilerun-portal) provides screen access on Android.
 - [OmniParser v2](https://huggingface.co/microsoft/OmniParser-v2.0) icon detector (AGPL-3.0),
   downloaded at runtime, not redistributed.

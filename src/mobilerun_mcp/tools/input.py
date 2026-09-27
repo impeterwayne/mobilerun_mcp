@@ -39,30 +39,14 @@ async def tap_point(session: DeviceSession, x: int, y: int, stealth: bool = Fals
         await session.tap_xy(x, y)
 
 
-async def index_point(session: DeviceSession, index: int) -> tuple[int, int, dict]:
-    """Tap point for a mobilerun-agent element index (see get_state)."""
-    from ..agentui import element_coords
-
-    if not session.agent_elements:
-        await session.agent_state()
-    try:
-        x, y = element_coords(session.agent_elements, index, session.agent_size)
-    except ValueError as exc:
-        fail("element_not_found", str(exc), "call get_state for current indices")
-    element = next(e for e in session.agent_elements if e["index"] == index)
-    return x, y, {"target": {"index": index, "text": element["text"]}}
-
-
 def register(mcp: FastMCP, rt: Runtime) -> None:
-    async def resolve_point(session, x, y, som_id, index=None) -> tuple[int, int, dict]:
+    async def resolve_point(session, x, y, som_id) -> tuple[int, int, dict]:
         if som_id is not None:
             mark = session.get_mark(som_id)
             cx, cy = mark.center
             return cx, cy, {"target": {"som_id": som_id, "label": mark.label}}
-        if index is not None:
-            return await index_point(session, index)
         if x is None or y is None:
-            fail("invalid_argument", "give x and y, a som_id, or an index")
+            fail("invalid_argument", "give x and y, or a som_id")
         check_point(await session.screen_size(), x, y)
         return x, y, {"target": {"x": x, "y": y}}
 
@@ -100,16 +84,14 @@ def register(mcp: FastMCP, rt: Runtime) -> None:
         x: int | None = None,
         y: int | None = None,
         som_id: int | None = None,
-        index: int | None = None,
         duration_ms: int | None = None,
         ms: int | None = None,
         device: Device = None,
     ) -> dict:
-        """Press and hold at (x, y), a mark (som_id) or a get_state element (index).
-        Hold time: duration_ms or ms (default 1000)."""
+        """Press and hold at (x, y) or a mark (som_id). Hold time: duration_ms or ms (default 1000)."""
         session = get_session(rt, device)
         await guard_foreground(rt, session)
-        cx, cy, info = await resolve_point(session, x, y, som_id, index)
+        cx, cy, info = await resolve_point(session, x, y, som_id)
         hold = duration_ms or ms or DEFAULT_LONG_PRESS_MS
         return await mutate(
             session,
@@ -119,7 +101,7 @@ def register(mcp: FastMCP, rt: Runtime) -> None:
 
     @mcp.tool(tags={"write"})
     async def long_press_at(x: int, y: int, device: Device = None) -> dict:
-        """Long press at (x, y) (mobilerun agent action)."""
+        """Long press at (x, y)."""
         return await long_press(x=x, y=y, device=device)
 
     async def do_swipe(device, x1, y1, x2, y2, ms, action="swipe") -> dict:

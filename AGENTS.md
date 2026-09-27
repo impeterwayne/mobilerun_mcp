@@ -1,24 +1,16 @@
 # mobilerun-mcp Workspace Instructions
 
-This workspace configures the **mobilerun** MCP servers and device automation harness for Antigravity at workspace scope.
+This workspace configures the **mobilerun** MCP server and device automation harness for Antigravity at workspace scope.
 
-## Architecture & Detached Servers
+## Architecture & Server
 
-The server suite is modularized into three dedicated MCP servers:
+The server suite runs as a dedicated MCP server:
 
-1. **`mobilerun` (Core Device Server, default)**:
+1. **`mobilerun` (Core Device Server)**:
    - Contains 94 core tools covering `mobilerun-core` Device API (`ui`, `find_nodes`, `tap_text`, `wait_for_app`, `get_clipboard`), screen perception (`read_screen`, `perceive_screen`), input gestures (`tap`, `swipe`, `type_text`, `press_home`), system intents, notifications, and media.
    - Run: `python -m mobilerun_mcp.server` (or `mobilerun-mcp.exe`)
 
-2. **`mobilerun-agent` (Agent Server)**:
-   - Contains the `mobilerun` agent action set (`get_state`, `click`, `type_secret`), local CLI agent runs (`run_task`, `list_tasks`), and macro replay.
-   - Run: `python -m mobilerun_mcp.agent_server` (or `mobilerun-agent-mcp.exe`)
-
-3. **`mobilerun-cloud` (Cloud Server)**:
-   - Contains Mobilerun Cloud platform tools (`create_device`, `manage_device`, credentials, flows, workflows).
-   - Run: `python -m mobilerun_mcp.cloud_server` (or `mobilerun-cloud-mcp.exe`)
-
-All three are registered at workspace scope in [.agents/mcp_config.json](file:///d:/Quest/mobilerun-mcp/.agents/mcp_config.json).
+Registered at workspace scope in [.agents/mcp_config.json](file:///d:/Quest/mobilerun-mcp/.agents/mcp_config.json).
 
 ## Connected Device Target
 
@@ -57,12 +49,4 @@ When operating the phone using core mobilerun MCP tools:
 - Run core server over HTTP:
   ```powershell
   .\.venv\Scripts\python.exe -m mobilerun_mcp.server --http --port 4816
-  ```
-- Run agent server manually:
-  ```powershell
-  .\.venv\Scripts\python.exe -m mobilerun_mcp.agent_server
-  ```
-- Run cloud server manually:
-  ```powershell
-  .\.venv\Scripts\python.exe -m mobilerun_mcp.cloud_server
   ```

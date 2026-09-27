@@ -59,8 +59,6 @@ class DeviceSession:
         self.last_look_at = 0.0
         self.action_count = 0
         self.seen_at: dict[str, int] = {}  # screen signature -> action_count when last seen
-        self.agent_elements: list[dict] = []  # mobilerun-agent indexed elements (get_state)
-        self.agent_size: tuple[int, int] | None = None
         self._apps: list[App] = []
         self._apps_at = 0.0
         self._connected = False
@@ -218,41 +216,6 @@ class DeviceSession:
 
     def invalidate_marks(self) -> None:
         self.marks_stale = True
-        self.agent_elements = []
-
-    async def agent_state(self) -> str:
-        """Index the screen the way the mobilerun agent does; returns its formatted text."""
-        from .agentui import index_state
-
-        state = await self.raw_state()
-        text, elements = index_state(state)
-        if not elements:  # non-Portal tree (iOS): number the parsed elements in the same order
-            screen = await self.capture()
-            elements = [
-                {
-                    "index": i,
-                    "resourceId": e.resource_id,
-                    "className": e.class_name,
-                    "checkedState": (f"isChecked={e.checked}" if e.checkable else ""),
-                    "text": e.text or e.description or e.resource_id or e.class_name,
-                    "bounds": f"{e.bounds.left},{e.bounds.top},{e.bounds.right},{e.bounds.bottom}",
-                    "children": [],
-                }
-                for i, e in enumerate(
-                    (
-                        e
-                        for e in screen.elements
-                        if e.bounds.right - e.bounds.left > 5 and e.bounds.bottom - e.bounds.top > 5
-                    ),
-                    start=1,
-                )
-            ]
-            from .agentui import SCHEMA, _element_lines
-
-            text = f"Current Clickable UI elements:\n{SCHEMA}:\n{_element_lines(elements)}"
-        self.agent_elements = elements
-        self.agent_size = await self.screen_size()
-        return text
 
     def get_mark(self, som_id: int) -> Mark:
         if not self.marks:
@@ -316,7 +279,6 @@ class Runtime:
         self.config = config
         self._sessions: dict[str, DeviceSession] = {}
         self._default = ""
-        self.local_tasks = None  # tools.tasks.LocalTasks
 
     def default_device(self) -> str:
         """MOBILERUN_DEVICE, else the only attached adb device; anything else is an error."""

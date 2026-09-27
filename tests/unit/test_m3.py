@@ -223,7 +223,6 @@ def test_server_advertises_full_tool_surface():
         "record_finding",
         "request_screen_capture_permission",
         "web_search",
-        # kept from the first version of this server
         "start_app",
         "press",
         "screenshot",
@@ -231,11 +230,10 @@ def test_server_advertises_full_tool_surface():
         "list_apps",
         "list_devices",
         "ping_device",
-        "run_task",
     }
 
     async def names():
-        async with Client(build_server(Config(), mode="all")) as client:
+        async with Client(build_server(Config())) as client:
             return {t.name for t in await client.list_tools()}
 
     missing = expected - asyncio.run(names())

@@ -11,7 +11,7 @@ import httpx
 import numpy as np
 import pytest
 
-from mobilerun_mcp import agentui, detect, grid
+from mobilerun_mcp import detect, grid
 from mobilerun_mcp.marks import build_marks
 from mobilerun_mcp.parsers.a11y import generic_bounds, parse_any_state, parse_screen
 from mobilerun_mcp.parsers.shortcuts import parse_shortcuts, split_uri
@@ -57,31 +57,6 @@ STATE = {
     "phone_state": {"packageName": "com.x", "currentApp": "X", "isEditable": True},
     "device_context": {"screen_bounds": {"width": 720, "height": 1280}},
 }
-
-
-# ---- mobilerun agent indexing ---------------------------------------------------------------
-def test_index_state_numbers_like_mobilerun_and_filters_offscreen_and_tiny():
-    text, elements = agentui.index_state(STATE)
-    labels = [e["text"] for e in elements]
-    assert [e["index"] for e in elements] == list(range(1, len(elements) + 1))
-    assert "gone" not in labels and "tiny" not in labels
-    assert "Current Clickable UI elements" in text and "**App:** X (com.x)" in text
-    switch = next(e for e in elements if e["text"] == "Wi-Fi")
-    assert switch["checkedState"] == "isChecked=True"
-
-
-def test_tap_point_avoids_sibling_drawn_on_top():
-    _, elements = agentui.index_state(STATE)
-    ok = next(e for e in elements if e["text"] == "OK")
-    assert ok["tapBlockers"] == ["100,20,300,70"]
-    x, y = agentui.element_coords(elements, ok["index"], (720, 1280))
-    assert not (100 <= x < 300 and 20 <= y < 70) and 10 <= x < 200
-    with pytest.raises(ValueError, match="No element found with index 99"):
-        agentui.element_coords(elements, 99)
-
-
-def test_find_uncovered_point_none_when_fully_covered():
-    assert agentui.find_uncovered_point((0, 0, 10, 10), [(0, 0, 10, 10)]) is None
 
 
 # ---- Screen grid and entries ------------------------------------------------------------------
@@ -256,48 +231,3 @@ def test_fast_connection_routes_hot_paths_through_the_session():
     assert any(c[0] == "shell" and "am start" in c[1] and "-p 'com.x'" in c[1] for c in calls)
     assert "a11y_tree" in ui and base64.b64decode(shot) == b"PNG"
     assert {"execute_script", "get_clipboard"} <= set(caps["actions"])
-
-
-# ---- credentials and local tasks -----------------------------------------------------------
-def test_load_secrets_supports_both_mobilerun_formats(tmp_path):
-    from mobilerun_mcp.tools.agent import load_secrets
-
-    file = tmp_path / "credentials.yaml"
-    file.write_text(
-        "secrets:\n  A: {value: one, enabled: true}\n  B: two\n  C: {value: three, enabled: false}\n"
-    )
-    assert load_secrets(str(file)) == {"A": "one", "B": "two"}
-
-
-def test_local_run_task_lifecycle(tmp_path):
-    import os
-
-    from fastmcp import Client
-
-    from mobilerun_mcp.config import Config
-    from mobilerun_mcp.server import build_agent_server
-
-    if os.name == "nt":
-        fake = tmp_path / "mobilerun.cmd"
-        fake.write_text("@echo off\r\necho step one\r\necho Goal achieved: opened it\r\n")
-    else:
-        fake = tmp_path / "mobilerun"
-        fake.write_text("#!/bin/sh\necho step one\necho 'Goal achieved: opened it'\n")
-        fake.chmod(0o755)
-
-    async def run():
-        cfg = Config(device="x:1", mobilerun_bin=str(fake))
-        async with Client(build_agent_server(cfg)) as client:
-            done = (await client.call_tool("run_task", {"task": "open it"})).structured_content
-            task_id = done["taskId"]
-            summary = (await client.call_tool("get_task", {"taskId": task_id})).structured_content
-            listed = (await client.call_tool("list_tasks", {"scope": "local"})).structured_content
-            status = (
-                await client.call_tool("get_task", {"taskId": task_id, "view": "status"})
-            ).structured_content
-            return done, summary, listed, status
-
-    done, summary, listed, status = asyncio.run(run())
-    assert done["ok"] and done["result"] == "Goal achieved: opened it"
-    assert summary["succeeded"] and "step one" in summary["output_tail"]
-    assert listed["local"][0]["id"] == done["taskId"] and status["status"] == "completed"

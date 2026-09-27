@@ -1,7 +1,7 @@
-"""Parity with the upstream projects: any call valid for droidrun's official
-mobilerun-mcp, the mobilerun-core Device API or the mobilerun agent must be valid here.
+"""Parity with the upstream projects: any call valid for the mobilerun-core Device API
+must be valid here.
 
-Specs live in src/mobilerun_mcp/upstream/ (extracted from the upstream sources).
+Specs live in src/mobilerun_mcp/upstream/ (extracted from upstream sources).
 """
 
 from __future__ import annotations
@@ -14,13 +14,7 @@ import pytest
 from fastmcp import Client
 
 from mobilerun_mcp.config import Config
-from mobilerun_mcp.server import (
-    build_agent_server,
-    build_all_server,
-    build_cloud_server,
-    build_core_server,
-    build_server,
-)
+from mobilerun_mcp.server import build_server
 
 TYPES = {
     "number": {"number", "integer"},
@@ -37,8 +31,8 @@ def spec(name: str) -> dict:
 
 
 async def _surface() -> tuple[dict[str, dict], set[str], set[str]]:
-    cfg = Config(enable_adb=True, device="x:1", cloud_api_key="dr_sk_test")
-    async with Client(build_all_server(cfg)) as client:
+    cfg = Config(enable_adb=True, device="x:1")
+    async with Client(build_server(cfg)) as client:
         tools = {
             t.name: (getattr(t, "input_schema", None) or t.inputSchema)
             for t in await client.list_tools()
@@ -51,46 +45,6 @@ async def _surface() -> tuple[dict[str, dict], set[str], set[str]]:
 @pytest.fixture(scope="module")
 def surface():
     return asyncio.run(_surface())
-
-
-def _types(prop: dict) -> set[str]:
-    if "type" in prop:
-        t = prop["type"]
-        return set(t) if isinstance(t, list) else {t}
-    out: set[str] = set()
-    for alt in prop.get("anyOf", []) + prop.get("oneOf", []):
-        out |= _types(alt)
-    return out or {"any"}
-
-
-def check_compatible(tool: str, upstream: dict, ours: dict) -> list[str]:
-    problems = []
-    props = ours.get("properties", {})
-    for name, uprop in upstream.get("properties", {}).items():
-        if name not in props:
-            problems.append(f"{tool}: missing parameter {name!r}")
-            continue
-        wants = _types(uprop) - {"any", "null"}
-        have = _types(props[name])
-        accepted = set().union(*(TYPES.get(w, {w}) for w in wants)) if wants else set()
-        if wants and "any" not in have and not (accepted & have):
-            problems.append(f"{tool}.{name}: type {sorted(have)} does not accept {sorted(wants)}")
-    for req in ours.get("required", []):
-        if req not in upstream.get("required", []):
-            problems.append(f"{tool}: requires {req!r}, which the upstream call may omit")
-    return problems
-
-
-def test_every_official_mobilerun_mcp_tool_accepts_its_calls(surface):
-    tools, _, _ = surface
-    problems = []
-    for entry in spec("official_mcp_tools.json"):
-        name = entry["name"]
-        if name not in tools:
-            problems.append(f"missing official tool {name}")
-            continue
-        problems += check_compatible(name, entry["inputSchema"], tools[name])
-    assert not problems, "\n".join(problems)
 
 
 def test_every_mobilerun_core_device_method_is_a_tool(surface):
@@ -108,52 +62,15 @@ def test_every_mobilerun_core_device_method_is_a_tool(surface):
     assert not problems, "\n".join(problems)
 
 
-def test_every_mobilerun_agent_action_is_a_tool(surface):
-    tools, _, _ = surface
-    problems = []
-    for action, params in spec("mobilerun_api.json")["agent_actions"].items():
-        if action not in tools:
-            problems.append(f"missing agent action {action}")
-            continue
-        props = tools[action].get("properties", {})
-        problems += [f"{action}: missing parameter {p!r}" for p in params if p not in props]
-    assert not problems, "\n".join(problems)
-
-
-def test_core_server_isolation():
+def test_core_server_surface():
     cfg = Config(enable_adb=True)
 
     async def run():
-        async with Client(build_core_server(cfg)) as client:
+        async with Client(build_server(cfg)) as client:
             return {t.name for t in await client.list_tools()}
 
     tools = asyncio.run(run())
     assert "ui" in tools and "tap" in tools and "adb" in tools
     assert "get_state" not in tools and "click" not in tools
     assert "create_device" not in tools and "manage_device" not in tools
-
-
-def test_agent_server_isolation():
-    cfg = Config()
-
-    async def run():
-        async with Client(build_agent_server(cfg)) as client:
-            return {t.name for t in await client.list_tools()}
-
-    tools = asyncio.run(run())
-    assert "get_state" in tools and "click" in tools and "run_task" in tools
-    assert "ui" not in tools and "tap" not in tools
-    assert "create_device" not in tools
-
-
-def test_cloud_server_isolation():
-    cfg = Config(cloud_api_key="dr_sk_test")
-
-    async def run():
-        async with Client(build_cloud_server(cfg)) as client:
-            return {t.name for t in await client.list_tools()}
-
-    tools = asyncio.run(run())
-    assert "create_device" in tools and "manage_device" in tools
-    assert "ui" not in tools and "tap" not in tools
-    assert "click" not in tools
+    assert "run_task" not in tools

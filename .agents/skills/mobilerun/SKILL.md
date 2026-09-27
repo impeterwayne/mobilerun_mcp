@@ -11,21 +11,15 @@ This skill guides automation, inspection, and interaction with Android devices u
 
 ---
 
-## 1. Architecture & Multi-Server Suite
+## 1. Architecture
 
-The workspace is organized into three decoupled MCP servers:
-
-| Server | Scope | Tool Count | Primary Responsibilities |
-| :--- | :--- | :---: | :--- |
-| **`mobilerun` (Core)** | Device Control | **94** | Screen perception (SOM/text grid), input gestures, app lifecycle, `mobilerun-core` SDK methods, notifications, media, system intents, diagnostics. |
-| **`mobilerun-agent`** | Autonomous Agent | **17** | `get_state`, element-index clicks, credential secrets (`type_secret`), local background task runners (`run_task`), macro playback. |
-| **`mobilerun-cloud`** | Cloud Infrastructure | **27** | Virtual device provisioning (`create_device`), remote app/file management, credential packages, cloud automation flows. |
+The workspace provides the **`mobilerun`** MCP server containing 94 core device tools covering screen perception, input gestures, app lifecycle, `mobilerun-core` SDK methods, notifications, media, system intents, and diagnostics.
 
 > Complete parameter-level specifications for all tools can be found in the [Tools Reference Catalog](references/tools_reference.md).
 
 ---
 
-## 2. Core Tool Categories (The 94 Core Tools)
+## 2. Tool Categories (The 94 Core Tools)
 
 ### A. Screen Perception & Visual Grounding (6 tools)
 - **`read_screen`**: Generates a fast, lightweight ASCII/text-grid view of visible elements. Use this first when you only need to read text or understand layout without image generation overhead.
@@ -99,7 +93,7 @@ Direct programmatic access to the underlying `mobilerun-core` Python SDK:
 
 ### I. Device Diagnostics & Setup (9 tools)
 - **`get_device_status`**: Queries battery level, screen state, foreground app, resolution, IP addresses, and volume.
-- **`list_devices`**: Lists available ADB devices or cloud virtual devices.
+- **`list_devices`**: Lists available ADB devices.
 - **`ping_device` / `echo`**: Verifies ADB and Portal transport connectivity.
 - **`connect_device` / `disconnect_device`**: Manages device ADB connection lifecycle.
 - **`setup_portal`**: Installs and enables the Mobilerun Portal service APK.

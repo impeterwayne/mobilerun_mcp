@@ -28,7 +28,7 @@ GROUPS = [
     (
         "input",
         "Gestures, typing and keys",
-        "Every action settles the screen and returns `post_action_observation`. Target with `x`/`y`, a `som_id`, or (mobilerun style) an `index` from `get_state`.",
+        "Every action settles the screen and returns `post_action_observation`. Target with `x`/`y` or a `som_id`.",
     ),
     ("apps", "Apps and deep links", ""),
     ("intents", "System intents and contacts", ""),
@@ -40,22 +40,7 @@ GROUPS = [
     (
         "core",
         "mobilerun-core Device API",
-        "Same names and parameters as `mobilerun_core.Device`. Works on Android (adb or Portal HTTP), iOS and Mobilerun Cloud devices.",
-    ),
-    (
-        "agent",
-        "mobilerun agent actions",
-        "The mobilerun agent's action set. Indices come from `get_state`.",
-    ),
-    (
-        "tasks",
-        "Agent tasks and macros",
-        "`run_task` runs the Mobilerun agent locally (mobilerun CLI) or on a Mobilerun Cloud device.",
-    ),
-    (
-        "cloud",
-        "Mobilerun Cloud platform",
-        "Same tools as droidrun's official mobilerun-mcp. Needs `MOBILERUN_CLOUD_API_KEY`; device tools also work on local devices where an equivalent exists.",
+        "Same names and parameters as `mobilerun_core.Device`. Works on Android (adb or Portal HTTP) and iOS devices.",
     ),
     ("device", "Devices and connection", ""),
     ("legacy", "Compatibility", ""),
@@ -69,7 +54,7 @@ GROUPS = [
 EXAMPLES: dict[str, list[dict]] = {
     "perceive_screen": [{}, {"description": "search bar", "detail": "full"}],
     "tap": [{"som_id": 4}, {"x": 540, "y": 1200}],
-    "long_press": [{"som_id": 4}, {"index": 7, "ms": 800}],
+    "long_press": [{"som_id": 4}, {"duration_ms": 800}],
     "swipe": [
         {"x1": 360, "y1": 1000, "x2": 360, "y2": 300},
         {"coordinate": [360, 1000], "coordinate2": [360, 300], "duration": 0.5},
@@ -86,9 +71,7 @@ EXAMPLES: dict[str, list[dict]] = {
         {"action": "set_alarm", "hour": 7, "minute": 30, "label": "wake"},
         {"action": "navigate", "destination": "Cairo Tower", "mode": "walk"},
     ],
-    "run_task": [{"task": "Open Clock and tell me the first alarm", "maxSteps": 20}],
     "find_nodes": [{"text_contains": "Wi"}],
-    "device_action": [{"deviceId": "192.168.1.20:5555", "operation": "tap", "x": 540, "y": 1200}],
     "adb": [{"command": "shell dumpsys battery"}],
 }
 
