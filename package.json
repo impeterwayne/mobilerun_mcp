@@ -18,6 +18,7 @@
     "pyproject.toml",
     "uv.lock",
     "README.md",
+    "README.vi.md",
     "LICENSE",
     "NOTICE"
   ],
