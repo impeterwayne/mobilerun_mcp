@@ -100,19 +100,13 @@ env = { MOBILERUN_DEVICE = "<serial>" }
 
 ### 2. Thiết lập thiết bị và cài đặt Portal
 
-1. Kết nối điện thoại Android (hoặc bật giả lập) và kiểm tra thiết bị qua ADB:
+Tải và cài đặt file **[Mobilerun Portal APK](https://github.com/droidrun/mobilerun-portal/releases)** trên thiết bị Android của bạn:
+
 ```bash
-adb devices
+adb install -r <portal.apk>
 ```
-2. Cài đặt và kích hoạt dịch vụ trợ năng Mobilerun Portal:
-```bash
-npx @impeterwayne/mobilerun-mcp mobilerun setup -d <serial>
-```
-3. Kiểm tra kết nối tới thiết bị:
-```bash
-npx @impeterwayne/mobilerun-mcp mobilerun ping -d <serial>
-```
-4. Khởi động AI client của bạn và bắt đầu tương tác với điện thoại!
+
+Sau đó kích hoạt dịch vụ trợ năng **Mobilerun Portal** trong **Cài đặt > Hỗ trợ tiếp cận (Accessibility)**.
 
 <details>
 <summary>Cài đặt thủ công bằng Python / mã nguồn</summary>
@@ -134,31 +128,6 @@ Cấu hình trong AI client:
     }
   }
 }
-```
-
-</details>
-
-<details>
-<summary>Cài đặt thủ công file APK Mobilerun Portal</summary>
-
-Tải file APK mới nhất từ [Portal releases](https://github.com/droidrun/mobilerun-portal/releases), sau đó chạy:
-
-```bash
-adb -s <serial> install -r <portal.apk>
-# Kích hoạt dịch vụ trợ năng:
-adb -s <serial> shell settings put secure enabled_accessibility_services com.mobilerun.portal/com.mobilerun.portal.service.MobilerunAccessibilityService
-adb -s <serial> shell settings put secure accessibility_enabled 1
-```
-
-</details>
-
-<details>
-<summary>Chạy với Docker / redroid</summary>
-
-```bash
-docker run -itd --privileged -p 5555:5555 redroid/redroid:12.0.0-latest
-adb connect localhost:5555
-npx @impeterwayne/mobilerun-mcp mobilerun setup -d localhost:5555
 ```
 
 </details>

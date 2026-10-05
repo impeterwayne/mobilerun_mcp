@@ -100,19 +100,13 @@ env = { MOBILERUN_DEVICE = "<serial>" }
 
 ### 2. Device setup and Portal install
 
-1. Connect your Android device (or launch an emulator) and ensure USB debugging is enabled:
+Download and install the **[Mobilerun Portal APK](https://github.com/droidrun/mobilerun-portal/releases)** on your Android device:
+
 ```bash
-adb devices
+adb install -r <portal.apk>
 ```
-2. Install and enable the Mobilerun Portal accessibility service:
-```bash
-npx @impeterwayne/mobilerun-mcp mobilerun setup -d <serial>
-```
-3. Verify device connectivity:
-```bash
-npx @impeterwayne/mobilerun-mcp mobilerun ping -d <serial>
-```
-4. Start your MCP client and begin interacting with your phone!
+
+Then enable the **Mobilerun Portal** accessibility service under **Settings > Accessibility**.
 
 <details>
 <summary>Manual Python / source setup</summary>
@@ -134,31 +128,6 @@ In your MCP client configuration:
     }
   }
 }
-```
-
-</details>
-
-<details>
-<summary>Manual Portal APK install</summary>
-
-Download the APK from [Portal releases](https://github.com/droidrun/mobilerun-portal/releases), then:
-
-```bash
-adb -s <serial> install -r <portal.apk>
-# Enable accessibility service:
-adb -s <serial> shell settings put secure enabled_accessibility_services com.mobilerun.portal/com.mobilerun.portal.service.MobilerunAccessibilityService
-adb -s <serial> shell settings put secure accessibility_enabled 1
-```
-
-</details>
-
-<details>
-<summary>Running with Docker / redroid</summary>
-
-```bash
-docker run -itd --privileged -p 5555:5555 redroid/redroid:12.0.0-latest
-adb connect localhost:5555
-npx @impeterwayne/mobilerun-mcp mobilerun setup -d localhost:5555
 ```
 
 </details>
