@@ -1,0 +1,47 @@
+{
+  "name": "@impeterwayne/mobilerun-mcp",
+  "version": "1.0.0",
+  "description": "MCP server that lets an AI agent see and control Android and iOS devices",
+  "bin": {
+    "mobilerun-mcp": "./bin/cli.js",
+    "mobilerun": "./bin/cli.js"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "./bin/cli.js",
+  "files": [
+    "bin",
+    "src",
+    "!src/**/__pycache__",
+    "!src/**/*.pyc",
+    "pyproject.toml",
+    "uv.lock",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "scripts": {
+    "start": "node ./bin/cli.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Hi-im-Connect/mobilerun-mcp.git"
+  },
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "android",
+    "ios",
+    "adb",
+    "mobilerun",
+    "automation",
+    "claude",
+    "cursor"
+  ],
+  "author": "impeterwayne",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  }
+}

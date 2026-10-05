@@ -34,13 +34,10 @@ It also works over any network `adb` works over (LAN, VPN, `adb connect`), not o
 | Package | Needed for | Install |
 |---|---|---|
 | `adb` (platform-tools) | device access | [download](https://developer.android.com/tools/releases/platform-tools), `apt install adb`, `brew install android-platform-tools` |
-| `uv` (or Python 3.11+) | environment and dependencies | [install](https://docs.astral.sh/uv/getting-started/installation/) |
-| `mobilerun` CLI | installing the Portal; `run_task` | `uv tool install mobilerun` |
+| `Node.js` (>= 18) | zero-setup runner via `npx` | [nodejs.org](https://nodejs.org/) |
 | `tesseract` (optional) | OCR on screens with a sparse accessibility tree | [install](https://tesseract-ocr.github.io/tessdoc/Installation.html), `apt install tesseract-ocr`, `brew install tesseract` |
 
-Python dependencies (`fastmcp`, `mobilerun-core[local]`, `onnxruntime`, `numpy`, `pillow`, ...) are
-installed with the project. The icon detector for `perceive_screen(detail="full")` (OmniParser v2,
-~80 MB, AGPL-3.0) downloads on first use to `~/.cache/mobilerun-mcp`.
+Python runtime, `uv`, `mobilerun` CLI, and all Python dependencies (`fastmcp`, `mobilerun-core[local]`, `onnxruntime`, `numpy`, `pillow`, ...) are automatically handled and provisioned in the background via `npx`. The icon detector for `perceive_screen(detail="full")` (OmniParser v2, ~80 MB, AGPL-3.0) downloads on first use to `~/.cache/mobilerun-mcp`.
 
 You also need an Android device that `adb` can reach: a USB phone
 ([enable USB debugging](https://developer.android.com/studio/debug/dev-options)), an x86_64
@@ -52,21 +49,26 @@ docker run -itd --privileged -p 5555:5555 redroid/redroid:12.0.0-latest
 adb connect localhost:5555
 ```
 
-### Install
+### Setup & Portal Install
 
 ```bash
 adb devices                                   # note the serial
 
-# Mobilerun Portal: the accessibility service the server reads the screen through
-mobilerun setup -d <serial>
-mobilerun ping -d <serial>                    # Portal is installed and accessible
+# Mobilerun Portal: install and verify using npx (or global npm install)
+npx @impeterwayne/mobilerun-mcp mobilerun setup -d <serial>
+npx @impeterwayne/mobilerun-mcp mobilerun ping -d <serial>
+```
 
-# Server
+<details>
+<summary>Manual Python / Git clone install</summary>
+
+```bash
 git clone https://github.com/Hi-im-Connect/mobilerun-mcp.git && cd mobilerun-mcp
 uv venv --python 3.13 .venv && uv pip install --python .venv/bin/python -e .
 ```
-
 On Windows use `.venv\Scripts\python.exe` in place of `.venv/bin/python`.
+
+</details>
 
 <details>
 <summary>Manual Portal install</summary>
@@ -84,13 +86,29 @@ adb -s <serial> shell settings put secure accessibility_enabled 1
 
 ### Register with your MCP client
 
-**Claude Code**
+**Zero-Setup (via npx / npm):**
 
-```bash
-claude mcp add --scope user mobilerun -e MOBILERUN_DEVICE=<serial> -- "$PWD/.venv/bin/python" -m mobilerun_mcp
+No Python or environment setup required on the client machine:
+
+```json
+{
+  "mcpServers": {
+    "mobilerun": {
+      "command": "npx",
+      "args": ["-y", "@impeterwayne/mobilerun-mcp@latest"],
+      "env": { "MOBILERUN_DEVICE": "<serial>" }
+    }
+  }
+}
 ```
 
-**Claude Desktop, Cursor, others:** add to the client's MCP config and restart it.
+Or with **Claude Code**:
+```bash
+claude mcp add --scope user mobilerun -e MOBILERUN_DEVICE=<serial> -- npx -y @impeterwayne/mobilerun-mcp@latest
+```
+
+<details>
+<summary>Manual Python / venv setup</summary>
 
 ```json
 {
@@ -103,6 +121,8 @@ claude mcp add --scope user mobilerun -e MOBILERUN_DEVICE=<serial> -- "$PWD/.ven
   }
 }
 ```
+
+</details>
 
 | Client | Config file |
 |---|---|

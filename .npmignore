@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+*.pyo
+.git/
+.github/
+.venv/
+.pytest_cache/
+.ruff_cache/
+tests/
+scripts/
+*.log
+.DS_Store
+*.tgz

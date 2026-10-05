@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 import shutil
+import sys
 from pathlib import Path
 
 from fastmcp import FastMCP
@@ -17,8 +18,33 @@ KEYS = ("home", "back", "enter")
 GOAL = re.compile(r"(Goal (?:achieved|failed): .*)")
 
 
+def _mobilerun_cmd(configured: str | None) -> list[str]:
+    """Resolve the command to invoke mobilerun CLI.
+
+    Checks:
+    1. Configured path.
+    2. System PATH.
+    3. Python virtualenv bin/scripts directory.
+    4. ~/.local/bin/mobilerun.
+    5. Fallback: sys.executable -m mobilerun (bundled module).
+    """
+    if configured:
+        return [configured]
+    which = shutil.which("mobilerun")
+    if which:
+        return [which]
+    venv_bin = Path(sys.executable).parent / ("mobilerun.exe" if sys.platform == "win32" else "mobilerun")
+    if venv_bin.is_file():
+        return [str(venv_bin)]
+    local_bin = Path.home() / ".local/bin/mobilerun"
+    if local_bin.is_file():
+        return [str(local_bin)]
+    return [sys.executable, "-m", "mobilerun"]
+
+
 def _mobilerun_bin(configured: str | None) -> str:
-    return configured or shutil.which("mobilerun") or str(Path.home() / ".local/bin/mobilerun")
+    cmd = _mobilerun_cmd(configured)
+    return cmd[0]
 
 
 def register(mcp: FastMCP, rt: Runtime) -> None:

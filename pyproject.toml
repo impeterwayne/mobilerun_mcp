@@ -1,6 +1,6 @@
 [project]
 name = "mobilerun-mcp"
-version = "0.1.0"
+version = "1.0.0"
 description = "MCP server that lets an AI agent see and control Android devices, including x86_64 redroid and emulators"
 readme = "README.md"
 license = "MIT"
@@ -19,6 +19,7 @@ dependencies = [
   "httpx>=0.27",
   "pillow>=10",
   "mobilerun-core[local]>=1.6,<2",
+  "mobilerun>=0.6.19",
   "onnxruntime>=1.18",
   "numpy>=1.26",
   "pyyaml>=6",

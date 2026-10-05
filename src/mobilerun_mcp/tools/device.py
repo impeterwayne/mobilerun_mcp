@@ -12,7 +12,7 @@ from ..parsers import system as sysparse
 from ..parsers.media import parse_stream_block
 from ..session import Runtime
 from .common import Device, get_session
-from .legacy import _mobilerun_bin as legacy_bin
+from .legacy import _mobilerun_cmd as legacy_cmd
 
 
 def register(mcp: FastMCP, rt: Runtime) -> None:
@@ -114,9 +114,9 @@ def register(mcp: FastMCP, rt: Runtime) -> None:
         return {"ok": True, "serial": session.serial, "output": out.strip()}
 
     async def mobilerun_cli(*args: str, timeout: float = 300.0) -> dict:
-        binary = legacy_bin(rt.config.mobilerun_bin)
+        cmd = legacy_cmd(rt.config.mobilerun_bin)
         proc = await asyncio.create_subprocess_exec(
-            binary, *args, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT
+            *cmd, *args, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT
         )
         try:
             out, _ = await asyncio.wait_for(proc.communicate(), timeout)
